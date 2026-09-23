@@ -107,6 +107,7 @@ export default function GrowthPage() {
         `补领：${Array.isArray(res.claimed) ? res.claimed.length : 0} 项`,
         `抽奖：${res.lottery?.drawn ?? 0} 次 ${res.lottery?.prizes?.join("、") ?? ""}`,
         `盲盒：${res.blindbox?.opened ?? 0} 个 ${res.blindbox?.items?.join("、") ?? ""}`,
+        ...(Array.isArray(res.progressed) && res.progressed.length ? [`刷到：${res.progressed.join("、")}`] : []),
       ]);
       await loadTasks();
     } catch (e) {

@@ -397,7 +397,7 @@ pub async fn progress_core_tasks(account: &Value) -> Vec<String> {
     // ---- 发现应用 / 企鹅教师助手 ----
     for (code, buddy_id, buddy_name) in [
         ("Buddy_App", "buddy-app-default", "发现应用"),
-        ("Buddy_App_QQ", "buddy-app-qq", "企鹅教师助手"),
+        ("Buddy_App_QQ", "cb_y5Dy46tPQGGWtueMxXbe", "企鹅教师助手"),
     ] {
         let (st, _, _) = task_progress(account, code).await;
         if st == "completed" || st == "claimed" { continue; }
@@ -441,6 +441,66 @@ pub async fn progress_core_tasks(account: &Value) -> Vec<String> {
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
         done.push("Expert_team_use_3".to_string());
+    }
+
+    // ---- 通用：遍历所有未完成任务 ----
+    let all = list_tasks(account).await;
+    let items = all.get("tasks").and_then(|t| t.as_array()).cloned().unwrap_or_default();
+    for t in &items {
+        let code = t.get("taskCode").and_then(|c| c.as_str()).unwrap_or("").to_string();
+        let name = t.get("name").and_then(|c| c.as_str()).unwrap_or("").to_string();
+        let st2 = t.get("acceptStatus").and_then(|s| s.as_str()).unwrap_or("").to_string();
+        let cur = t.get("current").and_then(|v| v.as_i64()).unwrap_or(0);
+        let tgt = t.get("target").and_then(|v| v.as_i64()).unwrap_or(1);
+        if st2 == "completed" || st2 == "claimed" { continue; }
+        if cur >= tgt && tgt > 0 { continue; }
+        let needed = (tgt - cur).max(1);
+        let conv = format!("conv-{}", uuid::Uuid::new_v4());
+        let req = format!("req-{}", uuid::Uuid::new_v4());
+        let msg = format!("msg-{}", uuid::Uuid::new_v4());
+        let evs: Vec<Value> = match code.as_str() {
+            "RichMeow_Chat" => vec![
+                json!({"eventCode":"agent_task_created","source":"LOCAL","name":"working","task_target":"local","mode":"craft","requestModelId":"fast-model","requestModelName":"fast-model","has_repo":false,"repo_type":"none","workspace_type":"empty","has_connector":false,"connector_types":[],"has_mention":false,"mention_types":[],"has_template":false,"action":"","template_name":"","has_expert":false,"expert_id":"","expert_name":"","expert_industry_id":"","has_skill":false,"skill_names":[],"conversationId":conv,"messageId":msg,"buddyId":"","buddyName":""}),
+                json!({"eventCode":"chat_message_send","messageId":msg.clone()+"-assistant","historyCount":0,"isContextTruncated":false,"currentStepCount":1,"traceId":req,"rootRequestId":req,"parentConversationId":conv,"agentName":"cli","agentType":"main"}),
+                json!({"eventCode":"chat_request_send","inputLength":24,"isPlan":false,"isAutoExecuteTerminal":false,"isAutoModify":false,"codebaseEnable":false,"maxToken":0,"maxSteps":500,"temperature":0,"maxRetries":0,"mentionContexts":[],"knowledgeId":[],"knowledgeName":[],"codebaseId":"","mentionContextCount":0,"command":"","recommendId":"","skillId":"","skillCount":0,"totalCount":0,"traceId":req,"rootRequestId":req,"parentConversationId":conv,"agentName":"cli","agentType":"main"}),
+                json!({"eventCode":"chat_message_response","messageId":msg.clone()+"-assistant","responseModelId":"fast-model","inputToken":120,"outputToken":80,"totalToken":200,"cachedTokens":0,"cachedWriteTokens":0,"cachedMissTokens":0,"isSuccessful":true,"messageErrorCode":"","finishReason":"stop","traceId":req,"conversationId":conv,"rootRequestId":req,"parentConversationId":conv,"agentName":"cli","agentType":"main"}),
+                json!({"eventCode":"chat_message_status","messageId":msg.clone()+"-assistant","messageErrorCode":"0","traceId":req,"rootRequestId":req,"parentConversationId":conv,"agentName":"cli","agentType":"main"}),
+                json!({"eventCode":"chat_request_response","mode":"craft","toolCallCount":0,"inputToken":120,"outputToken":80,"totalToken":200,"cachedTokens":0,"cachedWriteTokens":0,"cachedMissTokens":0,"isSuccessful":true,"messageErrorCode":"","finishReason":"stop","rootRequestId":req,"parentConversationId":conv,"agentName":"cli","agentType":"main"}),
+            ],
+            "Expert_lighthouse" => vec![
+                json!({"eventCode":"expert_summoned","id":"expert-lh","name":"轻量云专家","type":"agent","expertTitle":"轻量云专家","expertType":"agent","source":"builtin"}),
+                json!({"eventCode":"expert_actual_use","id":"expert-lh","name":"轻量云专家","expertTitle":"轻量云专家","type":"agent","expertType":"agent","source":"builtin","version":"","cost":0,"characterCount":12,"conversationId":conv,"requestId":req,"messageId":msg,"requestModelId":"deepseek-v4-flash","requestModelName":"DeepSeek V4 Flash"}),
+            ],
+            "Hp_Appearance" => vec![
+                json!({"eventCode":"appearance_skin_apply","action":"apply","source":"settings_close","id":"theme-tkmw7j","vipLevel":"free","series":"craft","type":"personal"}),
+            ],
+            "skill_1" => vec![
+                json!({"eventCode":"skill_info","skillId":"skill-algo","skillName":"algorithmic-trading","mode":"LOCAL","source":"builtin"}),
+            ],
+            "Buddy_App_QQ" => vec![
+                json!({"eventCode":"buddyapp_discover_click","buddyId":"cb_y5Dy46tPQGGWtueMxXbe","buddyName":"企鹅教师助手","mode":"LOCAL"}),
+                json!({"eventCode":"buddyapp_show","elementId":"cb_y5Dy46tPQGGWtueMxXbe","elementName":"企鹅教师助手","position":2,"buddyId":"cb_y5Dy46tPQGGWtueMxXbe","buddyName":"企鹅教师助手","mode":"LOCAL"}),
+                json!({"eventCode":"buddyapp_enter_click","elementId":"cb_y5Dy46tPQGGWtueMxXbe","elementName":"企鹅教师助手","position":2,"isFirstPage":"1","buddyId":"cb_y5Dy46tPQGGWtueMxXbe","buddyName":"企鹅教师助手","mode":"LOCAL"}),
+                json!({"eventCode":"buddyapp_auth_confirm_click","elementId":"cb_y5Dy46tPQGGWtueMxXbe","elementName":"企鹅教师助手","buddyId":"cb_y5Dy46tPQGGWtueMxXbe","buddyName":"企鹅教师助手","mode":"LOCAL"}),
+                json!({"eventCode":"buddyapp_bindaccount_skip_click","elementId":"cb_y5Dy46tPQGGWtueMxXbe","elementName":"企鹅教师助手","buddyId":"cb_y5Dy46tPQGGWtueMxXbe","buddyName":"企鹅教师助手","mode":"LOCAL"}),
+            ],
+            "black_cat" => { done.push(format!("跳过:{}({}) 需夜间真实对话", name, code)); continue; }
+            "Expert_Philanthropy" => { done.push(format!("跳过:{}({}) 需真实捐款", name, code)); continue; }
+            "wb_wechat_oa_subscribe_task" => { done.push(format!("跳过:{}({}) 需真实关注", name, code)); continue; }
+            "Model_chat_GLM5.2" => { done.push(format!("跳过:{}({}) 需真实对话", name, code)); continue; }
+            "chat_5" => { done.push(format!("跳过:{}({}) 需真实对话", name, code)); continue; }
+            _ => {
+                done.push(format!("未识别:{}({})", name, code));
+                continue;
+            }
+        };
+        for ev_chunk in evs.chunks(5) {
+            let r = report_events(account, ev_chunk.to_vec()).await;
+            let raw = format!("{}", r.get("raw").unwrap_or(&json!(null)));
+            done.push(format!("  [{}] resp: {}", code, raw));
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+        done.push(code);
     }
     done
 }
