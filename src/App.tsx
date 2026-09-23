@@ -24,27 +24,11 @@ import { useAccountsStore } from "@/stores/accounts";
 
 function UpdateCenter({ running }: { running: boolean | undefined }) {
   const version = useAccountsStore((s) => s.status?.version);
-  const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const [info] = useState<UpdateInfo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
-    let disposed = false;
-
-    async function checkForUpdate() {
-      try {
-        const result = await api.checkUpdate();
-        if (!disposed) setInfo(result.ok ? result : null);
-      } catch {
-        // 左下角只展示可操作的升级状态，网络错误不打扰正常使用。
-      }
-    }
-
-    void checkForUpdate();
-    const timer = window.setInterval(() => void checkForUpdate(), 30 * 60 * 1000);
-    return () => {
-      disposed = true;
-      window.clearInterval(timer);
-    };
+    // 自动更新检查已关闭：本版本由作者自行维护
   }, []);
 
   const hasUpdate = Boolean(info?.ok && info.hasUpdate && info.latest);
